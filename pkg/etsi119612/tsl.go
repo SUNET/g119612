@@ -12,12 +12,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
-	"strings"
-
 	"github.com/moov-io/signedxml"
+)
+
+const (
+	TSLTypeEUListOfLists = "http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUlistofthelists"
+	TSLTypeEUGeneric     = "http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUgeneric"
 )
 
 // A representation of an ETSI 119 612 trust status list. The main struct type StatusList
@@ -61,6 +65,74 @@ func (tsl *TSL) CleanCerts() {
 			}
 		}
 	})
+}
+
+func (tsl *TSL) IsLOTL() bool {
+	return tsl != nil && tsl.StatusList.TslSchemeInformation != nil &&
+		(tsl.StatusList.TslSchemeInformation.TslTSLType == TSLTypeEUListOfLists)
+}
+
+func (tsl *TSL) IsNationalTSL() bool {
+	return tsl != nil && tsl.StatusList.TslSchemeInformation != nil &&
+		(tsl.StatusList.TslSchemeInformation.TslTSLType == TSLTypeEUGeneric)
+}
+
+func FetchTSLBytes(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(url)
+	if bytes.Contains(bodyBytes, []byte("Signature>")) {
+
+		// lets try to validate a signature if we can
+		validator, err := signedxml.NewValidator(string(bodyBytes))
+		if err == nil {
+			validator.SetReferenceIDAttribute("Id")
+			xml, err := validator.ValidateReferences()
+			if err == nil {
+				bodyBytes = []byte(xml[0])
+				_ = validator.SigningCert()
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	fmt.Println(url)
+
+	//TODO:allows the certificates without a signature -- fix
+	return bodyBytes, err
+}
+
+func UnmarshalCleanCerts(bodyBytes []byte, url string) (*TSL, error) {
+	t := TSL{Source: url, StatusList: TrustStatusListType{}}
+	t.Signed = true
+	err := xml.Unmarshal(bodyBytes, &t.StatusList)
+	if err != nil {
+		return nil, err
+	}
+	//mb do smth else with it later: does not work on lotl
+	//t.cleanCerts()
+	return &t, nil
+}
+
+func FetchPontersToOtherListTSL(tsl *TSL) ([]string, error) {
+	queuePointers := []string{}
+
+	TslPointersToOtherTSLList := tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL.TslOtherTSLPointer
+
+	fmt.Printf("%v", len(TslPointersToOtherTSLList))
+	for _, i := range TslPointersToOtherTSLList {
+		queuePointers = append(queuePointers, i.TSLLocation)
+	}
+	return queuePointers, nil
 }
 
 // Create a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled

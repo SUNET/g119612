@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrustServiceStatusList xmlns="http://uri.etsi.org/02231/v2#" Id="TSL">
+
+  <SchemeInformation>
+    <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUlistofthelists</TSLType>
+    <SchemeOperatorName>
+      <Name xml:lang="en">Example Mock LOTL</Name>
+    </SchemeOperatorName>
+    <SchemeTerritory>EU</SchemeTerritory>
+    <SequenceNumber>1</SequenceNumber>
+    <IssueDateTime>2025-09-08T00:00:00Z</IssueDateTime>
+    <NextUpdate>2099-12-31T00:00:00Z</NextUpdate>
+    <DistributionPoints>
+      <URI>https://ec.europa.eu/tools/lotl/eu-lotl.xml</URI>
+    </DistributionPoints>
+    <PointersToOtherTSL>
+      <OtherTSLPointer>
+        <ServiceDigitalIdentities>
+          <ServiceDigitalIdentity>
+            <DigitalId>
+              <X509Certificate>MIIEfjCCAuagAwIBAgIUbuYzJiNV9QU2uvAZ+LSsnJdhUrUwDQYJKoZIhvcNAQELBQAwRzELMAkGA1UEBhMCU0UxHDAaBgNVBAoME0V4YW1wbGUgU3dlZGVuIFRMU08xGjAYBgNVBAMMEVNFLVRMIE1vY2sgU2lnbmVyMCAXDTI1MDkwODExNDQ1NVoYDzIxMjUwODE1MTE0NDU1WjBHMQswCQYDVQQGEwJTRTEcMBoGA1UECgwTRXhhbXBsZSBTd2VkZW4gVExTTzEaMBgGA1UEAwwRU0UtVEwgTW9jayBTaWduZXIwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQDUPJBpy6eoQkNhdLqyC7k8Qo/RlbX3K0yq+OgSwNJqwIippMTsfP7hY0Vw1ANzeVZ6RlJ3eYRKJ8rfGxnREQ8u8BO8F0ZdIA69AyhMWhkBpDXufKdHpEKk/O0FpdG+3JaU9M5a2q3RadN7u0ruVox8t0ZvVPb2kUxErS0sPtnSexuaxKx5SIYp1edSaT9miRYfdcQoG+awQI6cd9/X01EKYOStq5v8A+FYbW1L8USEiLb/i76jV8iEuiww6PRMzP+mjSnRlDtVVQJ+DuCjEfKmjblsotwxVPiV8ln25IoLQ+THdDSQUeremQZFDq6YVins9DDzYhg/Mc7j2bC5kmvNhForg8mdAuiTeSIwngermFlwrIeFUYZvIAklEVqFYoh08fCYkP3vK4vnXUeIBgiiqoROsI5By0NiAHx3yn3m4gk2ihNHizs2/l1gSF6+21JuwSuEtEe30qpoXURhngOIY3K08onPfIMiCpOtPdHAWdisCQxedBTTeQ3PjrM3s1sCAwEAAaNgMF4wHQYDVR0OBBYEFGcA8xnSHFX88N5Pdj+40I6g3P/xMB8GA1UdIwQYMBaAFGcA8xnSHFX88N5Pdj+40I6g3P/xMAwGA1UdEwEB/wQCMAAwDgYDVR0PAQH/BAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBgQBYaJB52AuxdJffMYw1yAEco1Z+SgZ9iHIpHI0m4cKZNULaw9VwmZuIDnyCIQdHPztzraOb8gplqKTMIWtnpAEUBiykwQF3fsE2AGgs50XlGOiDBxZpPBSqEvu5luI5vXz86QsSEWWHGDly33n6TLx1sg/+6s1cRXbEZuYh5OTPsC9Ig8GANR4GbtcgbBik7frp2jNKa4aLwzq9MBRRSe517faD5rIdY+amUKADMfGLmCHBUk/xHjz5EcZUCawj8kUTfuWGNInXAR46MDLxFB9ZNxgORXTONnljwllSq0Z1D1IYl/A8fALrvKxXQ5EjsN8O5VAjNN5mhWF0JqDMyp73bqICYu7rC8wLqz3T1ep6uiFHj2Tgu2IFyzSUFSIVqEB4wQbJop7PFSJIdLeJ2ZzccEkYlu76r6e4NzPGVtVIAu+w1ofhbecAHyqw0sWwZbSo/iV3gt1Nvkw+W0Uk3L4cv3w2KCEBeBJvgJOYpymbdwig5ndHE4ijaCbkUR52zqA=</X509Certificate>
+            </DigitalId>
+          </ServiceDigitalIdentity>
+        </ServiceDigitalIdentities>
+
+        <TSLLocation>https://trustedlist.pts.se/SE-TL.xml</TSLLocation>
+
+        <AdditionalInformation>
+          <OtherInformation>
+            <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUgeneric</TSLType>
+          </OtherInformation>
+          <OtherInformation>
+            <SchemeTerritory>SE</SchemeTerritory>
+          </OtherInformation>
+        </AdditionalInformation>
+      </OtherTSLPointer>
+
+      <OtherTSLPointer>
+        <ServiceDigitalIdentities>
+          <ServiceDigitalIdentity>
+            <DigitalId>
+              <X509Certificate>MIIEfDCCAuSgAwIBAgIUFP2HaK+mXHbZf3fvn8aZ5DGeyC0wDQYJKoZIhvcNAQELBQAwRjELMAkGA1UEBhMCSVQxGzAZBgNVBAoMEkV4YW1wbGUgSXRhbHkgVExTTzEaMBgGA1UEAwwRSVQtVEwgTW9jayBTaWduZXIwIBcNMjUwOTA4MTE0NDU1WhgPMjEyNTA4MTUxMTQ0NTVaMEYxCzAJBgNVBAYTAklUMRswGQYDVQQKDBJFeGFtcGxlIEl0YWx5IFRMU08xGjAYBgNVBAMMEUlULVRMIE1vY2sgU2lnbmVyMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzCRv4IOTZ4ffFRnOFedfX2V0eXHaHx8mURS2vlXRgt8wyFyRBKW6Yy1BP91UQn2Y0nn/NapwQORK5YWanXTm6pgHxnm9mVnnumh31szVHUxOTatEz8lF5jm7AbqehoQL/fEX1hSgB35Rr4q+GGDjODbXtbPDs7T4SZLOB5wP8PXQ2mOPs9PauRuS0kcolO15WA6tad02UFbq2B8pNw28E1MCIua7dXZwDhtHGK4y5WZqK/X4pyQQ58ZY9JRzPqWR8gVv5wKgvEf+Q+k6EaWhuzTn6yFYo+wUZVc1jQjf2b6GUL6+E0hu7GPGBdWhEGDm2GiyaCnOAWxJBkuGV41JXqPvNjM2uc7Ar87GWxhkiSW9LUO7DGZebH0auIcjwMmPA0tN6vWxXPZff3kjuGRKI+XmtCHgKBU4PceNvdJT04qwpqR5KArM5FPRg4Is0/YZEz3bP72OnyNZS2jbNR9h6P7TSOsR0dhjB3bal2qWOP+uuRlhWUT6SzOZHYk22/8FAgMBAAGjYDBeMB0GA1UdDgQWBBQWQIGD/vYHbxBsY/nkf/ar/71wPzAfBgNVHSMEGDAWgBQWQIGD/vYHbxBsY/nkf/ar/71wPzAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIHgDANBgkqhkiG9w0BAQsFAAOCAYEAeXj4Nrfl7sUbNYzr2Pl/PZWVoqPrhw9uvbkExscBo5+GDaq+1d02I1VtgOQ0qPlHaITlbvSEl6VXfPmak94jArgT2jr4dL+qToAjY1S7HD76y4BJQYC7SqhAiR9GoyEfCeApIiqCr/W9hPLWDvKpqv6pQE6zPspewXBPgmTraEl0OpIYHEkISh8dE4G4muqdHv18vVim89vMZBqnjNgp4XPWp7Kfn12m4yhb+udUWBxPtMA5sCRa2O3LkPurcNIPIcb81oAgRycEiewf7XghtGF71QYoc5QXojQAklflg5xAXLYEMI3Am8N7IEHBCfHQiVM3zxKldM2LZOBFbQNbKm7eIxk4InHvqiG4dP19Rh00eEdyI6mEjersQwUXW8/evyJ79u64Z2SiAUbknc6MMhB4I9HfuzL53wf7jxOWtUJvdftIPkNGXdGElqJN374MqfGW3/dn+2Ofpg6qOv8MVj0bpn9ggNX8op4ZvkXP4ueSIPgmbwc7QdoWFGZxBcaB</X509Certificate>
+            </DigitalId>
+          </ServiceDigitalIdentity>
+        </ServiceDigitalIdentities>
+
+        <TSLLocation>https://eidas.agid.gov.it/TL/TSL-IT.xml</TSLLocation>
+
+        <AdditionalInformation>
+          <OtherInformation>
+            <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUgeneric</TSLType>
+          </OtherInformation>
+          <OtherInformation>
+            <SchemeTerritory>IT</SchemeTerritory>
+          </OtherInformation>
+        </AdditionalInformation>
+      </OtherTSLPointer>
+
+    </PointersToOtherTSL>
+  </SchemeInformation>
+</TrustServiceStatusList>

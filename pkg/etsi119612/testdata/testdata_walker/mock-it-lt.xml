@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrustServiceStatusList xmlns="http://uri.etsi.org/02231/v2#"
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="TSL">
+    <SchemeInformation>
+        <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUgeneric</TSLType>
+        <SchemeOperatorName>
+            <Name xml:lang="en">Mock Italy TSL</Name>
+        </SchemeOperatorName>
+        <SchemeTerritory>IT</SchemeTerritory>
+        <SequenceNumber>1</SequenceNumber>
+        <IssueDateTime>2025-09-08T00:00:00Z</IssueDateTime>
+        <NextUpdate>2099-12-31T00:00:00Z</NextUpdate>
+        <DistributionPoints>
+            <URI>https://eidas.agid.gov.it/TL/TSL-IT.xml</URI>
+        </DistributionPoints>
+        <PointersToOtherTSL>
+            <OtherTSLPointer>
+                <ServiceDigitalIdentities>
+                    <ServiceDigitalIdentity>
+                        <DigitalId>
+                            <X509Certificate>MIIEbjCCAtagAwIBAgIUDyYK0ZgcnRBXhc2I+6rNPxS9QHcwDQYJKoZIhvcNAQELBQAwPzELMAkGA1UEBhMCRVUxFTATBgNVBAoMDEV4YW1wbGUgTE9UTDEZMBcGA1UEAwwQTE9UTCBNb2NrIFNpZ25lcjAgFw0yNTA5MDgxMTQ0NTVaGA8yMTI1MDgxNTExNDQ1NVowPzELMAkGA1UEBhMCRVUxFTATBgNVBAoMDEV4YW1wbGUgTE9UTDEZMBcGA1UEAwwQTE9UTCBNb2NrIFNpZ25lcjCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCCAYoCggGBAJQEY6fMnZL0ovwB+H0AzwIsBiqlUwn8pqPm5f1C5AxMI5K9QAXSj4XSHCGvYTCVQQ0MtRW3sTAsx1aBPmShKj84mrKYmYxKtaoXUe+S9fhnHTBJrrg3rrfWejra0rTQII6FtHaYhKh0HGNvW2J3qliyatMBxXKRup4ExYzB4yQ0w4X4SimBSX0JDW0wh7ueaZzdaetgYLcos3V56Dc5yB6YzDbRJ+Lr+70s91MFPQPzdNnc1Ph8RXjz7CaaI2+8ftFhfd4Mk4N/elC+gtdJnWewk6GfgpU25sFxmoxa8AhpFWewTZQoCt9KNU8IhG5O49s5daQdyv5U6InroFDPayzk723K4NjJdBhTeh/Cag+sq2bHZUBBQ9R+qb2M3GN5VOKCcZUyIzzfkc5G2/tK6BnMNIhu8i/bikEMAkzxePqhfG8W4tF98gSkm8xdoZmDAioodOu+qmDs6n4CCydm0lSm92wh2DkXSG2bQ/XO2u6RYGIpwnvVxMm2/z3pQPe/VwIDAQABo2AwXjAdBgNVHQ4EFgQUpqttGdYtuRzcYBnLVhDjRMAp8oswHwYDVR0jBBgwFoAUpqttGdYtuRzcYBnLVhDjRMAp8oswDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCB4AwDQYJKoZIhvcNAQELBQADggGBACGAJNl5572Di6109P6UMKrlBQivNkX3bkfASSdv5GEM7EoskpbYbgGQsnr38GsPlPYh77rT7UypGfGMXKeRheWdZsPt7Rx1j3zCgLI15pEY2PPKXP4B39mrtdaUC+ihuZDNiwwg8I2ZKXKdyR4G4+sAgkNZYxQAFOv4M3UsNhR41khYMHisR/AWzMZGLY/hvqyb9qzW97YiRU5eIN4iV4OhivqzyrlorTydCgcOfvnlSsQkJxRu5Ii5a3QTetkyulp78GfnPNUaH7nInysZDR89O8o7KeWTbx9krP/yFcURTnvs1BP271jS5dKHiFg8j5RGyRcxAasUp1iv4fhsEiMXtUMrDrIFox4AiS06JvWEekOLecJ0l/lYFMiGWs8SuNTbUoDYQa/+V3IG4USH+LQAp8eSrK/iALDtSiOC4aUgwoitL/UiIXw9acWZ+fXs1VA8ig+IVB08d5NqtNEh3pMjU/d4Royy0rb0ztQm7oMVFRvJw8dU0tJBaw58iPsrOg==</X509Certificate>
+                        </DigitalId>
+                    </ServiceDigitalIdentity>
+                </ServiceDigitalIdentities>
+                <TSLLocation>https://ec.europa.eu/tools/lotl/eu-lotl.xml</TSLLocation>
+                <AdditionalInformation>
+                    <OtherInformation>
+                        <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUlistofthelists</TSLType>
+                    </OtherInformation>
+                    <OtherInformation>
+                        <SchemeTerritory>EU</SchemeTerritory>
+                    </OtherInformation>
+                </AdditionalInformation>
+            </OtherTSLPointer>
+        </PointersToOtherTSL>
+    </SchemeInformation>
+    <TrustServiceProviderList>
+        <TrustServiceProvider>
+            <TSPInformation>
+                <TSPName>
+                    <Name xml:lang="en">Mock Italian CA</Name>
+                </TSPName>
+                <TSPInformationURI>
+                    <URI xml:lang="en">https://ca.example.it/</URI>
+                </TSPInformationURI>
+            </TSPInformation>
+            <TSPServices>
+                <TSPService>
+                    <ServiceInformation>
+                        <ServiceTypeIdentifier>http://uri.etsi.org/TrstSvc/TrustedList/SvcInfoExt/CA/QC</ServiceTypeIdentifier>
+                        <ServiceName>
+                            <Name xml:lang="en">Qualified Certificates Mock</Name>
+                        </ServiceName>
+                        <StatusStartingTime>2025-01-01T00:00:00Z</StatusStartingTime>
+                        <ServiceStatus>http://uri.etsi.org/TrstSvc/TrustedList/Svcstatus/granted</ServiceStatus>
+                        <ServiceDigitalIdentity>
+                            <DigitalId>
+                                <X509Certificate>SVRfTU9DS19DQV9DRVJUX0JBU0UyNA==</X509Certificate>
+                            </DigitalId>
+                        </ServiceDigitalIdentity>
+                    </ServiceInformation>
+                </TSPService>
+            </TSPServices>
+        </TrustServiceProvider>
+    </TrustServiceProviderList>
+</TrustServiceStatusList>

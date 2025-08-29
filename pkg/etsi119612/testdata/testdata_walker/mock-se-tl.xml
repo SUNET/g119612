@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrustServiceStatusList xmlns="http://uri.etsi.org/02231/v2#"
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="TSL">
+    <SchemeInformation>
+        <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUgeneric</TSLType>
+        <SchemeOperatorName>
+            <Name xml:lang="en">Sweden TSL</Name>
+        </SchemeOperatorName>
+        <SchemeTerritory>SE</SchemeTerritory>
+        <SequenceNumber>1</SequenceNumber>
+        <IssueDateTime>2025-09-08T00:00:00Z</IssueDateTime>
+        <NextUpdate>2099-12-31T00:00:00Z</NextUpdate>
+        <DistributionPoints>
+            <URI>https://trustedlist.pts.se/SE-TL.xml</URI>
+        </DistributionPoints>
+        <PointersToOtherTSL>
+            <OtherTSLPointer>
+                <ServiceDigitalIdentities>
+                    <ServiceDigitalIdentity>
+                        <DigitalId>
+                            <X509Certificate>MIIEbjCCAtagAwIBAgIUDyYK0ZgcnRBXhc2I+6rNPxS9QHcwDQYJKoZIhvcNAQELBQAwPzELMAkGA1UEBhMCRVUxFTATBgNVBAoMDEV4YW1wbGUgTE9UTDEZMBcGA1UEAwwQTE9UTCBNb2NrIFNpZ25lcjAgFw0yNTA5MDgxMTQ0NTVaGA8yMTI1MDgxNTExNDQ1NVowPzELMAkGA1UEBhMCRVUxFTATBgNVBAoMDEV4YW1wbGUgTE9UTDEZMBcGA1UEAwwQTE9UTCBNb2NrIFNpZ25lcjCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCCAYoCggGBAJQEY6fMnZL0ovwB+H0AzwIsBiqlUwn8pqPm5f1C5AxMI5K9QAXSj4XSHCGvYTCVQQ0MtRW3sTAsx1aBPmShKj84mrKYmYxKtaoXUe+S9fhnHTBJrrg3rrfWejra0rTQII6FtHaYhKh0HGNvW2J3qliyatMBxXKRup4ExYzB4yQ0w4X4SimBSX0JDW0wh7ueaZzdaetgYLcos3V56Dc5yB6YzDbRJ+Lr+70s91MFPQPzdNnc1Ph8RXjz7CaaI2+8ftFhfd4Mk4N/elC+gtdJnWewk6GfgpU25sFxmoxa8AhpFWewTZQoCt9KNU8IhG5O49s5daQdyv5U6InroFDPayzk723K4NjJdBhTeh/Cag+sq2bHZUBBQ9R+qb2M3GN5VOKCcZUyIzzfkc5G2/tK6BnMNIhu8i/bikEMAkzxePqhfG8W4tF98gSkm8xdoZmDAioodOu+qmDs6n4CCydm0lSm92wh2DkXSG2bQ/XO2u6RYGIpwnvVxMm2/z3pQPe/VwIDAQABo2AwXjAdBgNVHQ4EFgQUpqttGdYtuRzcYBnLVhDjRMAp8oswHwYDVR0jBBgwFoAUpqttGdYtuRzcYBnLVhDjRMAp8oswDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCB4AwDQYJKoZIhvcNAQELBQADggGBACGAJNl5572Di6109P6UMKrlBQivNkX3bkfASSdv5GEM7EoskpbYbgGQsnr38GsPlPYh77rT7UypGfGMXKeRheWdZsPt7Rx1j3zCgLI15pEY2PPKXP4B39mrtdaUC+ihuZDNiwwg8I2ZKXKdyR4G4+sAgkNZYxQAFOv4M3UsNhR41khYMHisR/AWzMZGLY/hvqyb9qzW97YiRU5eIN4iV4OhivqzyrlorTydCgcOfvnlSsQkJxRu5Ii5a3QTetkyulp78GfnPNUaH7nInysZDR89O8o7KeWTbx9krP/yFcURTnvs1BP271jS5dKHiFg8j5RGyRcxAasUp1iv4fhsEiMXtUMrDrIFox4AiS06JvWEekOLecJ0l/lYFMiGWs8SuNTbUoDYQa/+V3IG4USH+LQAp8eSrK/iALDtSiOC4aUgwoitL/UiIXw9acWZ+fXs1VA8ig+IVB08d5NqtNEh3pMjU/d4Royy0rb0ztQm7oMVFRvJw8dU0tJBaw58iPsrOg==</X509Certificate>
+                        </DigitalId>
+                    </ServiceDigitalIdentity>
+                </ServiceDigitalIdentities>
+                <TSLLocation>https://ec.europa.eu/tools/lotl/eu-lotl.xml</TSLLocation>
+                <AdditionalInformation>
+                    <OtherInformation>
+                        <TSLType>http://uri.etsi.org/TrstSvc/TrustedList/TSLType/EUlistofthelists</TSLType>
+                    </OtherInformation>
+                    <OtherInformation>
+                        <SchemeTerritory>EU</SchemeTerritory>
+                    </OtherInformation>
+                </AdditionalInformation>
+            </OtherTSLPointer>
+        </PointersToOtherTSL>
+    </SchemeInformation>
+    <TrustServiceProviderList>
+        <TrustServiceProvider>
+            <TSPInformation>
+                <TSPName>
+                    <Name xml:lang="en">Sunet Root CA</Name>
+                </TSPName>
+                <TSPAddress>
+                    <PostalAddresses>
+                        <PostalAddress xml:lang="en">
+                            <StreetAddress>1 Test Street</StreetAddress>
+                            <Locality>Stockholm</Locality>
+                            <CountryName>SE</CountryName>
+                        </PostalAddress>
+                    </PostalAddresses>
+                </TSPAddress>
+            </TSPInformation>
+            <TSPServices>
+                <TSPService>
+                    <ServiceInformation>
+                        <ServiceTypeIdentifier>http://uri.etsi.org/TrstSvc/Svctype/CA/QC</ServiceTypeIdentifier>
+                        <ServiceName>
+                            <Name xml:lang="en">Sunet Root Certification Authority</Name>
+                        </ServiceName>
+                        <ServiceDigitalIdentity>
+                            <DigitalId>
+                                <X509Certificate>MIIDoTCCAomgAwIBAgIUBZhyzznE716BGU+M90OlqkFM6uwwDQYJKoZIhvcNAQELBQAwWDELMAkGA1UEBhMCU0UxEjAQBgNVBAgMCVN0b2NraG9sbTEOMAwGA1UECgwFU3VuZXQxDTALBgNVBAsMBFJvb3QxFjAUBgNVBAMMDVN1bmV0IFJvb3QgQ0EwHhcNMjUwNjI2MDgzODE1WhcNMzUwNjI0MDgzODE1WjBYMQswCQYDVQQGEwJTRTESMBAGA1UECAwJU3RvY2tob2xtMQ4wDAYDVQQKDAVTdW5ldDENMAsGA1UECwwEUm9vdDEWMBQGA1UEAwwNU3VuZXQgUm9vdCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKopSb8pP2wSLnkJbgoE4TMqUg9tTJOelN+NeC9dOgxZULc25KrT/zk2pRE+tN1jyun//Cyli7PDjbbN40g6MKMbrvusI18mkW8+X2eumZez2ylVL3gxVW6W1n4MDkKTi5koYf/CHdulzZJqFsC2ImcfI2KPTrUUhg1hBJw6/0DYmxwyywBGLQfvO/Y2Hml1WZT6D2SXMdYdANsUOtv8F8jHiI2Dm90VmPuTc6T7FKdLnzOGry1bzTyv6UmWjsq4hlYcl8lzR9ZUtu3FIyOjvLlwFnWCKV2X5wiECLZfyIe69M7BTWsrFGcxTzdV1HeAYPf67VxKllE79UPbcHPfIPkCAwEAAaNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFFn61hNKdpuZ1rkD4YQop03miMdYMB8GA1UdIwQYMBaAFFn61hNKdpuZ1rkD4YQop03miMdYMA0GCSqGSIb3DQEBCwUAA4IBAQAs9pfVYv0UpERlkWwh1gyiaJ7wa6scd8fF2lEhf8ePDmdYLHttN6fri9EmbIwJor8JUhSNiINgq2xL0PuDu1RGQhhrDIFjvPtLQCEOKg19NKoJQP7ihcn0y9UKagsprHbDhem4BjRM8qJSFVysI94XESXW8baYebQqyScWCEY5eNd5Jl0Zmda/czQURWqplCnRVzHi9xTK5pWjIMJ1EMI7xVjkxqo01N1p/kA971GuetLlZzqgvgMOT2GWlaqYj6FmxEdJOLnUInxnx0weidjquGVyeprsjKdt/FMkLqxnQX/kwOiPDU3nBuOq/4l4PWMMMKPTXzjQvbptzllTW+3C</X509Certificate>
+                            </DigitalId>
+                            <DigitalId>
+                                <X509SubjectName>C=SE, ST=Stockholm, O=Sunet, OU=Root, CN=Sunet Root CA</X509SubjectName>
+                            </DigitalId>
+                            <DigitalId>
+                                <X509SKI>WfrWE0p2m5nWuQPhhCinTeaIx1g=</X509SKI>
+                            </DigitalId>
+                        </ServiceDigitalIdentity>
+                        <ServiceStatus>https://uri.etsi.org/TrstSvc/TrustedList/Svcstatus/granted/</ServiceStatus>
+                        <StatusStartingTime>2025-01-01T00:00:00Z</StatusStartingTime>
+                    </ServiceInformation>
+                </TSPService>
+            </TSPServices>
+        </TrustServiceProvider>
+    </TrustServiceProviderList>
+</TrustServiceStatusList>
