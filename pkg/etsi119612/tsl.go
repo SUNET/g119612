@@ -15,8 +15,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/moov-io/signedxml"
 	"strings"
+
+	"github.com/moov-io/signedxml"
 )
 
 // A representation of an ETSI 119 612 trust status list. The main struct type StatusList
@@ -40,7 +41,7 @@ func (tsl *TSL) String() string {
 	return fmt.Sprintf("TSL[Source: %s] by %s with %d trust service providers", tsl.Source, tsl.SchemeOperatorName(), tsl.NumberOfTrustServiceProviders())
 }
 
-// clean up spaces 
+// clean up spaces
 func (tsl *TSL) cleanCerts() {
 	tsl.withTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
 		if svc.TslServiceInformation != nil && svc.TslServiceInformation.TslServiceDigitalIdentity != nil {
@@ -51,6 +52,23 @@ func (tsl *TSL) cleanCerts() {
 		}
 	})
 }
+
+func FetchTSLBytes(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GET %s: %s", url, resp.Status)
+	}
+
+	// optional: cap size
+	const max = 10 << 20 // 10MB
+	return io.ReadAll(io.LimitReader(resp.Body, max))
+}
+
 // Create a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled
 // into the object structure.
 func FetchTSL(url string) (*TSL, error) {
