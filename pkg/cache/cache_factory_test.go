@@ -45,7 +45,7 @@ func TestCachSetGetIntegration(t *testing.T) {
 		Reply(200).
 		File("../etsi119612/testdata/EWC-TL.xml")
 
-	resp, err := etsi119612.FetchTSLBytes("https://ewc-consortium.github.io/EWC-TL")
+	resp, signer, err := etsi119612.FetchTSLBytes("https://ewc-consortium.github.io/EWC-TL")
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +63,12 @@ func TestCachSetGetIntegration(t *testing.T) {
 	fmt.Print(value)
 	expirationTime, val, err := newCache.GetWithTTL(ctx, "https://ewc-consortium.github.io")
 	fmt.Printf("%v %v %v", expirationTime, val, err)
-
+	tsl, error := etsi119612.UnmarshalCleanCerts(resp, signer, "https://ewc-consortium.github.io")
+	if error != nil {
+		panic(err)
+	}
+	fmt.Print(tsl)
+	assert.True(t, tsl.Signed)
 }
 
 //change fetch function and move it to bites

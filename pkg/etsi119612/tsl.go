@@ -53,20 +53,48 @@ func (tsl *TSL) cleanCerts() {
 	})
 }
 
-func FetchTSLBytes(url string) ([]byte, error) {
+func FetchTSLBytes(url string) ([]byte, x509.Certificate, error) {
 	resp, err := http.Get(url)
+	if err != nil {
+		return nil, x509.Certificate{}, err
+	}
+	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, x509.Certificate{}, err
+	}
+	var signer = x509.Certificate{}
+	if bytes.Contains(bodyBytes, []byte("Signature>")) {
+
+		// lets try to validate a signature if we can
+		validator, err := signedxml.NewValidator(string(bodyBytes))
+		if err == nil {
+			validator.SetReferenceIDAttribute("Id")
+			xml, err := validator.ValidateReferences()
+			if err == nil {
+				bodyBytes = []byte(xml[0])
+				signer = validator.SigningCert()
+			} else {
+				return nil, x509.Certificate{}, err
+			}
+		} else {
+			return nil, x509.Certificate{}, err
+		}
+	}
+
+	return bodyBytes, signer, err
+}
+
+func UnmarshalCleanCerts(bodyBytes []byte, signer x509.Certificate, url string) (*TSL, error) {
+	t := TSL{Source: url, StatusList: TrustStatusListType{}}
+	t.Signed = true
+	t.Signer = signer
+	err := xml.Unmarshal(bodyBytes, &t.StatusList)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GET %s: %s", url, resp.Status)
-	}
-
-	// optional: cap size
-	const max = 10 << 20 // 10MB
-	return io.ReadAll(io.LimitReader(resp.Body, max))
+	t.cleanCerts()
+	return &t, nil
 }
 
 // Create a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled
