@@ -110,6 +110,9 @@ func (tsl *TSL) AddReferencedTSL(ref *TSL) {
 // Dereference pointers to other TSLs found in the TSL, fetching and adding them to the Referenced list.
 
 func (tsl *TSL) dereferencePointersToOtherTSL() {
+	if tsl.StatusList.TslSchemeInformation == nil || tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL == nil {
+		return
+	}
 	for _, p := range tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL.TslOtherTSLPointer {
 		refTsl, err := FetchTSL(p.TSLLocation)
 		if err == nil {
