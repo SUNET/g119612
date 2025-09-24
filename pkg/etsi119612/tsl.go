@@ -31,14 +31,23 @@ type TSL struct {
 }
 
 func (tsl *TSL) NumberOfTrustServiceProviders() int {
+	if tsl == nil || tsl.StatusList.TslTrustServiceProviderList == nil {
+		return 0
+	}
 	return len(tsl.StatusList.TslTrustServiceProviderList.TslTrustServiceProvider)
 }
 
 func (tsl *TSL) SchemeOperatorName() string {
+	if tsl == nil || tsl.StatusList.TslSchemeInformation == nil {
+		return "Unknown scheme operator"
+	}
 	return FindByLanguage(tsl.StatusList.TslSchemeInformation.TslSchemeOperatorName, "en", "Unknown scheme operator")
 }
 
 func (tsl *TSL) String() string {
+	if tsl == nil {
+		return "<nil TSL>"
+	}
 	return fmt.Sprintf("TSL[Source: %s] by %s with %d trust service providers", tsl.Source, tsl.SchemeOperatorName(), tsl.NumberOfTrustServiceProviders())
 }
 

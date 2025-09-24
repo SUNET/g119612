@@ -285,3 +285,45 @@ func TestTSLRecursiveReference(t *testing.T) {
 	assert.Contains(t, tsl.Referenced, tsl)
 	// Should not panic or loop forever
 }
+
+func TestValidate_InvalidStatus(t *testing.T) {
+	tsp := &etsi119612.TSPType{}
+	svc := &etsi119612.TSPServiceType{
+		TslServiceInformation: &etsi119612.TSPServiceInformationType{
+			TslServiceStatus: "invalid-status",
+		},
+	}
+	policy := etsi119612.NewTSPServicePolicy()
+	err := tsp.Validate(svc, nil, policy)
+	assert.ErrorIs(t, err, etsi119612.ErrInvalidStatus)
+}
+
+func TestValidate_InvalidConstraints(t *testing.T) {
+	tsp := &etsi119612.TSPType{}
+	svc := &etsi119612.TSPServiceType{
+		TslServiceInformation: &etsi119612.TSPServiceInformationType{
+			TslServiceStatus:         etsi119612.ServiceStatusGranted,
+			TslServiceTypeIdentifier: "foo",
+		},
+	}
+	policy := etsi119612.NewTSPServicePolicy()
+	policy.ServiceTypeIdentifier = []string{"bar"}
+	err := tsp.Validate(svc, nil, policy)
+	assert.ErrorIs(t, err, etsi119612.ErrInvalidConstraints)
+}
+
+func TestTSLSummary(t *testing.T) {
+	tsl := &etsi119612.TSL{}
+	summary := tsl.Summary()
+	assert.NotNil(t, summary)
+	assert.Contains(t, summary, "scheme_operator_name")
+	assert.Contains(t, summary, "num_trust_service_providers")
+	assert.Contains(t, summary, "summary")
+}
+
+func TestTSLSummary_NullTSL(t *testing.T) {
+	var tsl *etsi119612.TSL
+	summary := tsl.Summary()
+	assert.NotNil(t, summary)
+	assert.Len(t, summary, 0)
+}
