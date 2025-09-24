@@ -15,8 +15,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/moov-io/signedxml"
 	"strings"
+
+	"github.com/moov-io/signedxml"
 )
 
 // A representation of an ETSI 119 612 trust status list. The main struct type StatusList
@@ -26,6 +27,7 @@ type TSL struct {
 	Source     string
 	Signed     bool
 	Signer     x509.Certificate
+	Referenced []*TSL
 }
 
 func (tsl *TSL) NumberOfTrustServiceProviders() int {
@@ -40,7 +42,7 @@ func (tsl *TSL) String() string {
 	return fmt.Sprintf("TSL[Source: %s] by %s with %d trust service providers", tsl.Source, tsl.SchemeOperatorName(), tsl.NumberOfTrustServiceProviders())
 }
 
-// clean up spaces 
+// clean up spaces
 func (tsl *TSL) cleanCerts() {
 	tsl.withTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
 		if svc.TslServiceInformation != nil && svc.TslServiceInformation.TslServiceDigitalIdentity != nil {
@@ -51,6 +53,7 @@ func (tsl *TSL) cleanCerts() {
 		}
 	})
 }
+
 // Create a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled
 // into the object structure.
 func FetchTSL(url string) (*TSL, error) {
@@ -91,8 +94,28 @@ func FetchTSL(url string) (*TSL, error) {
 	}
 
 	t.cleanCerts()
+	t.dereferencePointersToOtherTSL()
+	log.Infof("g119612: Parsed TSL from %s with %d trust service providers\n", url, t.NumberOfTrustServiceProviders())
 
 	return &t, nil
+}
+
+func (tsl *TSL) AddReferencedTSL(ref *TSL) {
+	if tsl.Referenced == nil {
+		tsl.Referenced = []*TSL{}
+	}
+	tsl.Referenced = append(tsl.Referenced, ref)
+}
+
+// Dereference pointers to other TSLs found in the TSL, fetching and adding them to the Referenced list.
+
+func (tsl *TSL) dereferencePointersToOtherTSL() {
+	for _, p := range tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL.TslOtherTSLPointer {
+		refTsl, err := FetchTSL(p.TSLLocation)
+		if err == nil {
+			tsl.AddReferencedTSL(refTsl)
+		}
+	}
 }
 
 // Walk a TSL, calling cb once for each TrustService found. The TrustServiceProvider is provided as a first

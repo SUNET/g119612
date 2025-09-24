@@ -78,3 +78,15 @@ func (tsp *TSPType) Validate(svc *TSPServiceType, chain []*x509.Certificate, pol
 
 	return nil
 }
+
+// Summary returns a human-readable summary of scheme-level information for this TSL.
+func (tsl *TSL) Summary() map[string]interface{} {
+	m := make(map[string]interface{})
+	if tsl == nil {
+		return m
+	}
+	m["scheme_operator_name"] = tsl.SchemeOperatorName()
+	m["num_trust_service_providers"] = tsl.NumberOfTrustServiceProviders()
+	m["summary"] = tsl.String()
+	return m
+}
