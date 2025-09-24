@@ -164,24 +164,124 @@ func TestPolicy(t *testing.T) {
 	assert.Equal(t, len(p.ServiceStatus), 2)
 }
 
-
-func TestTSLMethods(t *testing.T){
+func TestTSLMethods(t *testing.T) {
 	defer gock.Off()
 	gock.New("https://ewc-consortium.github.io").
 		Get("/EWC-TL").
 		Reply(200).
 		File("testdata/EWC-TL.xml")
 	tsl, err := etsi119612.FetchTSL("https://ewc-consortium.github.io/ewc-trust-list/EWC-TL")
-	assert.NoError(t,err)
+	assert.NoError(t, err)
 	if got := tsl.NumberOfTrustServiceProviders(); got != 17 {
 		t.Errorf("expected 17 providers, got %d", got)
 	}
 
-	if name:=tsl.SchemeOperatorName(); name != "EWC Consortium" {
+	if name := tsl.SchemeOperatorName(); name != "EWC Consortium" {
 		t.Errorf("expected 'EWC Consortium', got %q", name)
 	}
 	expectedStr := "TSL[Source: https://ewc-consortium.github.io/ewc-trust-list/EWC-TL] by EWC Consortium with 17 trust service providers"
 	if tsl.String() != expectedStr {
 		t.Errorf("unexpected String output:\ngot:  %q\nwant: %q", tsl.String(), expectedStr)
 	}
+}
+
+func TestDereferencePointersToOtherTSL(t *testing.T) {
+	defer gock.Off()
+	// Mock the main TSL with a pointer to another TSL
+	gock.New("https://example.com").
+		Get("/main.xml").
+		Reply(200).
+		File("testdata/TSL-with-pointer.xml")
+	// Mock the referenced TSL
+	gock.New("https://example.com").
+		Get("/referenced.xml").
+		Reply(200).
+		File("testdata/EWC-TL.xml")
+
+	tsl, err := etsi119612.FetchTSL("https://example.com/main.xml")
+	assert.NoError(t, err)
+	assert.NotNil(t, tsl)
+	assert.NotNil(t, tsl.Referenced)
+	assert.Greater(t, len(tsl.Referenced), 0)
+}
+
+func TestDereferencePointersToOtherTSL_InvalidPointer(t *testing.T) {
+	defer gock.Off()
+	// Mock the main TSL with a pointer to an invalid TSL
+	gock.New("https://example.com").
+		Get("/main.xml").
+		Reply(200).
+		File("testdata/TSL-with-invalid-pointer.xml")
+	// The referenced TSL will 404
+	gock.New("https://example.com").
+		Get("/notfound.xml").
+		Reply(404)
+
+	tsl, err := etsi119612.FetchTSL("https://example.com/main.xml")
+	assert.NoError(t, err)
+	assert.NotNil(t, tsl)
+	// Should not panic or error, but Referenced may be empty or nil
+}
+
+func TestWithTrustServices_EmptyAndNil(t *testing.T) {
+	tsl := &etsi119612.TSL{StatusList: etsi119612.TrustStatusListType{}}
+	called := false
+	tsl.WithTrustServices(func(tsp *etsi119612.TSPType, svc *etsi119612.TSPServiceType) {
+		called = true
+	})
+	assert.False(t, called, "Callback should not be called for empty TSL")
+}
+
+func TestToCertPool_RejectAllPolicy(t *testing.T) {
+	// Use a real TSL from testdata
+	defer gock.Off()
+	gock.New("https://ewc-consortium.github.io").
+		Get("/EWC-TL").
+		Reply(200).
+		File("testdata/EWC-TL.xml")
+	tsl, err := etsi119612.FetchTSL("https://ewc-consortium.github.io/ewc-trust-list/EWC-TL")
+	assert.NoError(t, err)
+	assert.NotNil(t, tsl)
+	// Policy that rejects all
+	rejectAll := &etsi119612.TSPServicePolicy{ServiceStatus: []string{"nonexistent-status"}}
+	pool := tsl.ToCertPool(rejectAll)
+	assert.NotNil(t, pool)
+	assert.Len(t, pool.Subjects(), 0)
+}
+
+func TestCleanCertsTrimsWhitespace(t *testing.T) {
+	tsl := &etsi119612.TSL{
+		StatusList: etsi119612.TrustStatusListType{
+			TslTrustServiceProviderList: &etsi119612.TrustServiceProviderListType{
+				TslTrustServiceProvider: []*etsi119612.TSPType{
+					{
+						TslTSPServices: &etsi119612.TSPServicesListType{
+							TslTSPService: []*etsi119612.TSPServiceType{
+								{
+									TslServiceInformation: &etsi119612.TSPServiceInformationType{
+										TslServiceDigitalIdentity: &etsi119612.DigitalIdentityListType{
+											DigitalId: []*etsi119612.DigitalIdentityType{
+												{X509Certificate: "  CERTDATA  "},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	tsl.CleanCerts()
+	cert := tsl.StatusList.TslTrustServiceProviderList.TslTrustServiceProvider[0].
+		TslTSPServices.TslTSPService[0].TslServiceInformation.TslServiceDigitalIdentity.DigitalId[0].X509Certificate
+	assert.Equal(t, "CERTDATA", cert)
+}
+
+func TestTSLRecursiveReference(t *testing.T) {
+	tsl := &etsi119612.TSL{}
+	tsl.Referenced = []*etsi119612.TSL{tsl}
+	assert.Contains(t, tsl.Referenced, tsl)
+	// Should not panic or loop forever
 }

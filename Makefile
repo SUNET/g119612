@@ -23,7 +23,7 @@ help: ## help information about make commands
 
 .PHONY: test
 test:
-	go test -v ./pkg/etsi119612
+	go test -v ./...
 
 .PHONY: build
 build:  ## build the library

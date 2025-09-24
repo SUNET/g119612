@@ -42,9 +42,9 @@ func (tsl *TSL) String() string {
 	return fmt.Sprintf("TSL[Source: %s] by %s with %d trust service providers", tsl.Source, tsl.SchemeOperatorName(), tsl.NumberOfTrustServiceProviders())
 }
 
-// clean up spaces
-func (tsl *TSL) cleanCerts() {
-	tsl.withTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
+// CleanCerts trims whitespace from all certificates in the TSL.
+func (tsl *TSL) CleanCerts() {
+	tsl.WithTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
 		if svc.TslServiceInformation != nil && svc.TslServiceInformation.TslServiceDigitalIdentity != nil {
 			for i := range svc.TslServiceInformation.TslServiceDigitalIdentity.DigitalId {
 				cert := svc.TslServiceInformation.TslServiceDigitalIdentity.DigitalId[i].X509Certificate
@@ -93,7 +93,7 @@ func FetchTSL(url string) (*TSL, error) {
 		return nil, err
 	}
 
-	t.cleanCerts()
+	t.CleanCerts()
 	t.dereferencePointersToOtherTSL()
 	log.Infof("g119612: Parsed TSL from %s with %d trust service providers\n", url, t.NumberOfTrustServiceProviders())
 
@@ -121,11 +121,14 @@ func (tsl *TSL) dereferencePointersToOtherTSL() {
 	}
 }
 
-// Walk a TSL, calling cb once for each TrustService found. The TrustServiceProvider is provided as a first
+// WithTrustServices walks a TSL, calling cb once for each TrustService found. The TrustServiceProvider is provided as a first
 // argument to the callback
-func (tsl *TSL) withTrustServices(cb func(*TSPType, *TSPServiceType)) {
+func (tsl *TSL) WithTrustServices(cb func(*TSPType, *TSPServiceType)) {
+	if tsl.StatusList.TslTrustServiceProviderList == nil {
+		return
+	}
 	for _, tsp := range tsl.StatusList.TslTrustServiceProviderList.TslTrustServiceProvider {
-		if tsp != nil {
+		if tsp != nil && tsp.TslTSPServices != nil {
 			for _, svc := range tsp.TslTSPServices.TslTSPService {
 				cb(tsp, svc)
 			}
@@ -136,11 +139,12 @@ func (tsl *TSL) withTrustServices(cb func(*TSPType, *TSPServiceType)) {
 // Generate a [crypto/xml.CertPool] object from the TSL.
 func (tsl *TSL) ToCertPool(policy *TSPServicePolicy) *x509.CertPool {
 	pool := x509.NewCertPool()
-	tsl.withTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
+	tsl.WithTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
 		svc.withCertificates(func(cert *x509.Certificate) {
-			pool.AddCertWithConstraint(cert, func(chain []*x509.Certificate) error {
-				return tsp.Validate(svc, chain, policy)
-			})
+			// Only add cert if policy is satisfied
+			if tsp.Validate(svc, []*x509.Certificate{cert}, policy) == nil {
+				pool.AddCert(cert)
+			}
 		})
 	})
 	return pool

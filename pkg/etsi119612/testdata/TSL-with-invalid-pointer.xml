@@ -1,0 +1,10 @@
+<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL>
+      <tsl:OtherTSLPointer>
+        <tsl:TSLLocation>https://example.com/notfound.xml</tsl:TSLLocation>
+      </tsl:OtherTSLPointer>
+    </tsl:PointersToOtherTSL>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>
