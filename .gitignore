@@ -1,5 +1,5 @@
 # Binaries for programs and plugins
-etsi_ts
+/etsi_ts
 *.exe
 *.exe~
 *.dll

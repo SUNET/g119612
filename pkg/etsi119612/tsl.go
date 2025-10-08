@@ -7,11 +7,14 @@ package etsi119612
 
 import (
 	"bytes"
+	"context"
 	"crypto/x509"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -63,18 +66,108 @@ func (tsl *TSL) CleanCerts() {
 	})
 }
 
-// Create a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled
-// into the object structure.
-func FetchTSL(url string) (*TSL, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+// TSLFetchOptions defines configurable options for fetching Trust Service Lists.
+// It allows controlling HTTP request parameters like User-Agent and timeout.
+//
+// The options provide control over:
+//   - The User-Agent header sent with HTTP requests
+//   - The timeout for HTTP connections and requests
+//   - Using a custom HTTP client for more advanced configuration
+//
+// For most cases, the DefaultTSLFetchOptions provide reasonable settings.
+type TSLFetchOptions struct {
+	// UserAgent is the User-Agent header to use for HTTP requests.
+	// A descriptive User-Agent helps server administrators identify client applications
+	// and can prevent blocking of requests that don't identify themselves.
+	UserAgent string
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	// Timeout is the maximum time to wait for an HTTP request to complete.
+	// This helps prevent applications from hanging indefinitely when servers are
+	// unresponsive or connections are slow.
+	Timeout time.Duration
+
+	// Client is a custom HTTP client to use instead of the default one.
+	// If provided, the Timeout option is ignored as the client should be
+	// configured with the desired timeout and other settings.
+	// Use this for advanced scenarios like custom TLS configuration or proxies.
+	Client *http.Client
+}
+
+// DefaultTSLFetchOptions provides reasonable default options for fetching TSLs
+var DefaultTSLFetchOptions = TSLFetchOptions{
+	UserAgent: "Go-Trust/1.0 TSL Fetcher (+https://github.com/SUNET/go-trust)",
+	Timeout:   30 * time.Second,
+}
+
+// FetchTSL creates a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled
+// into the object structure. This function uses DefaultTSLFetchOptions and automatically dereferences
+// pointers to other TSLs.
+//
+// For more control over HTTP parameters and dereferencing behavior, use FetchTSLWithOptions.
+func FetchTSL(url string) (*TSL, error) {
+	return FetchTSLWithReferencesAndOptions(url, DefaultTSLFetchOptions)
+}
+
+// FetchTSLWithOptions creates a TSL object from a URL with custom fetch options.
+// The URL is fetched with [net/http] using the provided options, parsed and unmarshalled
+// into the object structure.
+//
+// Unlike FetchTSL, this function does not automatically dereference pointers to other TSLs.
+// To fetch a TSL and all its referenced TSLs with the same options, use FetchTSLWithReferencesAndOptions.
+//
+// Parameters:
+//   - url: The URL to fetch the TSL from (supports file:// URLs for local files)
+//   - options: Options controlling HTTP request parameters
+//
+// Returns:
+//   - A pointer to the fetched and parsed TSL
+//   - Any error that occurred during fetching or parsing
+func FetchTSLWithOptions(url string, options TSLFetchOptions) (*TSL, error) {
+	var bodyBytes []byte
+	var err error
+	if strings.HasPrefix(url, "file://") {
+		path := strings.TrimPrefix(url, "file://")
+		bodyBytes, err = os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Create an HTTP client with the specified timeout
+		client := options.Client
+		if client == nil {
+			client = &http.Client{
+				Timeout: options.Timeout,
+			}
+		}
+		
+		// Create request with context
+		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
+		defer cancel()
+		
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Set User-Agent header
+		req.Header.Set("User-Agent", options.UserAgent)
+		
+		// Execute request
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		
+		// Check response status
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("unexpected HTTP status: %s", resp.Status)
+		}
+		
+		bodyBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
 	t := TSL{Source: url, StatusList: TrustStatusListType{}}
 	log.Debugf("g119612: Fetched %d bytes from %s\n", len(bodyBytes), url)
@@ -103,7 +196,9 @@ func FetchTSL(url string) (*TSL, error) {
 	}
 
 	t.CleanCerts()
-	t.dereferencePointersToOtherTSL()
+	
+	// Don't automatically dereference pointers here - that will be done by the caller if needed
+	
 	log.Infof("g119612: Parsed TSL from %s with %d trust service providers\n", url, t.NumberOfTrustServiceProviders())
 
 	return &t, nil
@@ -116,16 +211,52 @@ func (tsl *TSL) AddReferencedTSL(ref *TSL) {
 	tsl.Referenced = append(tsl.Referenced, ref)
 }
 
-// Dereference pointers to other TSLs found in the TSL, fetching and adding them to the Referenced list.
+// FetchTSLWithReferencesAndOptions fetches a TSL and all its referenced TSLs with the specified options.
+// This is a convenience function that combines FetchTSLWithOptions and dereferencePointersToOtherTSLWithOptions.
+//
+// Parameters:
+//   - url: The URL to fetch the TSL from
+//   - options: Options controlling HTTP request parameters
+//
+// Returns:
+//   - A pointer to the fetched TSL with all referenced TSLs loaded
+//   - Any error that occurred during fetching or parsing
+func FetchTSLWithReferencesAndOptions(url string, options TSLFetchOptions) (*TSL, error) {
+	tsl, err := FetchTSLWithOptions(url, options)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Dereference pointers with the same options
+	tsl.dereferencePointersToOtherTSLWithOptions(options)
+	return tsl, nil
+}
 
-func (tsl *TSL) dereferencePointersToOtherTSL() {
+// DereferencePointersToOtherTSL fetches and adds all referenced TSLs using default options.
+// This examines the TSL for pointers to other TSLs (TslPointersToOtherTSL) and fetches each
+// of them using the default fetch options.
+func (tsl *TSL) DereferencePointersToOtherTSL() {
+	tsl.dereferencePointersToOtherTSLWithOptions(DefaultTSLFetchOptions)
+}
+
+// dereferencePointersToOtherTSLWithOptions fetches and adds referenced TSLs using the provided fetch options.
+//
+// This method examines the TSL for pointers to other TSLs (TslPointersToOtherTSL) and fetches each
+// of them using the specified options. Successfully fetched TSLs are added to the Referenced list.
+// Failures to fetch referenced TSLs are logged but do not cause this method to return an error.
+//
+// Parameters:
+//   - options: The options to use when fetching referenced TSLs
+func (tsl *TSL) dereferencePointersToOtherTSLWithOptions(options TSLFetchOptions) {
 	if tsl.StatusList.TslSchemeInformation == nil || tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL == nil {
 		return
 	}
 	for _, p := range tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL.TslOtherTSLPointer {
-		refTsl, err := FetchTSL(p.TSLLocation)
+		refTsl, err := FetchTSLWithOptions(p.TSLLocation, options)
 		if err == nil {
 			tsl.AddReferencedTSL(refTsl)
+		} else {
+			log.Warnf("g119612: Failed to fetch referenced TSL %s: %v", p.TSLLocation, err)
 		}
 	}
 }
@@ -149,7 +280,7 @@ func (tsl *TSL) WithTrustServices(cb func(*TSPType, *TSPServiceType)) {
 func (tsl *TSL) ToCertPool(policy *TSPServicePolicy) *x509.CertPool {
 	pool := x509.NewCertPool()
 	tsl.WithTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
-		svc.withCertificates(func(cert *x509.Certificate) {
+		svc.WithCertificates(func(cert *x509.Certificate) {
 			// Only add cert if policy is satisfied
 			if tsp.Validate(svc, []*x509.Certificate{cert}, policy) == nil {
 				pool.AddCert(cert)

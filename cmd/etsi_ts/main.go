@@ -73,6 +73,7 @@ func main() {
 		fmt.Print("OK!\n")
 	case "show":
 		showCmd.Parse(os.Args[2:])
+                fmt.Printf("fetching %s\n",*showUrl)
 		tsl, err := etsi119612.FetchTSL(*showUrl)
 		if err != nil {
 			fmt.Printf("error: %v\n", err)

@@ -45,7 +45,7 @@ func NewTSPServicePolicy() *TSPServicePolicy {
 }
 
 // Cahe provided callback for all t all the X509 certificate data for the given Trust Service object.
-func (svc *TSPServiceType) withCertificates(cb func(*x509.Certificate)) {
+func (svc *TSPServiceType) WithCertificates(cb func(*x509.Certificate)) {
 	if svc.TslServiceInformation.TslServiceDigitalIdentity != nil {
 		for _, id := range svc.TslServiceInformation.TslServiceDigitalIdentity.DigitalId {
 			if len(id.X509Certificate) > 0 {
