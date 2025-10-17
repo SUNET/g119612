@@ -109,7 +109,7 @@ func TestFetchError(t *testing.T) {
 
 func TestFetchTSLWithOptions_CustomUserAgent(t *testing.T) {
 	defer gock.Off()
-	
+
 	// Setup mock with matcher that checks the User-Agent header
 	gock.New("https://example.com").
 		Get("/tsl").
@@ -122,7 +122,7 @@ func TestFetchTSLWithOptions_CustomUserAgent(t *testing.T) {
 		UserAgent: "CustomUserAgent/1.0",
 		Timeout:   30 * time.Second,
 	}
-	
+
 	tsl, err := etsi119612.FetchTSLWithOptions("https://example.com/tsl", options)
 	assert.NoError(t, err)
 	assert.NotNil(t, tsl)
@@ -132,7 +132,7 @@ func TestFetchTSLWithOptions_CustomUserAgent(t *testing.T) {
 
 func TestFetchTSLWithOptions_Timeout(t *testing.T) {
 	defer gock.Off()
-	
+
 	// Mock server that delays for longer than our timeout
 	gock.New("https://example.com").
 		Get("/slow-tsl").
@@ -145,12 +145,12 @@ func TestFetchTSLWithOptions_Timeout(t *testing.T) {
 		UserAgent: "TimeoutTest/1.0",
 		Timeout:   50 * time.Millisecond,
 	}
-	
+
 	// This should time out
 	start := time.Now()
 	tsl, err := etsi119612.FetchTSLWithOptions("https://example.com/slow-tsl", options)
 	elapsed := time.Since(start)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, tsl)
 	// Make sure we didn't wait longer than expected
@@ -160,32 +160,32 @@ func TestFetchTSLWithOptions_Timeout(t *testing.T) {
 
 func TestFetchTSLWithOptions_ClientWithTimeout(t *testing.T) {
 	defer gock.Off()
-	
+
 	// Setup mock with a normal reply
 	gock.New("https://example.com").
 		Get("/client-timeout-test").
 		Reply(200).
 		File("./testdata/EWC-TL.xml")
-	
+
 	// Create a custom client with a very long timeout (this timeout should be used instead of the one in options)
 	customClient := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	
+
 	// Enable gock for this client (required for custom clients)
 	gock.InterceptClient(customClient)
 	defer gock.RestoreClient(customClient)
-	
+
 	// Use custom client but with a short timeout in options - the client timeout should take precedence
 	options := etsi119612.TSLFetchOptions{
 		Client:    customClient,
 		Timeout:   50 * time.Millisecond, // This should be ignored since we're providing a client
 		UserAgent: "ClientTest/1.0",
 	}
-	
+
 	// This should succeed because the mock responds immediately
 	tsl, err := etsi119612.FetchTSLWithOptions("https://example.com/client-timeout-test", options)
-	
+
 	// We should have successfully fetched the TSL since the client's timeout was not exceeded
 	if assert.NoError(t, err) {
 		assert.NotNil(t, tsl)
@@ -197,19 +197,19 @@ func TestFetchTSLWithOptions_ClientWithTimeout(t *testing.T) {
 
 func TestFetchTSLWithOptions_ErrorHandling(t *testing.T) {
 	defer gock.Off()
-	
+
 	// Mock server that returns a 404 error
 	gock.New("https://example.com").
 		Get("/missing-tsl").
 		Reply(404).
 		BodyString("Not Found")
-		
+
 	// Mock server that returns invalid XML
 	gock.New("https://example.com").
 		Get("/bad-xml").
 		Reply(200).
 		BodyString("<not-valid-xml>")
-		
+
 	tests := []struct {
 		name    string
 		url     string
@@ -235,16 +235,16 @@ func TestFetchTSLWithOptions_ErrorHandling(t *testing.T) {
 			errText: "missing protocol scheme", // Actual error message from the URL parser
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			options := etsi119612.TSLFetchOptions{
 				UserAgent: "ErrorTest/1.0",
 				Timeout:   2 * time.Second,
 			}
-			
+
 			tsl, err := etsi119612.FetchTSLWithOptions(tt.url, options)
-			
+
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errText)
@@ -259,30 +259,30 @@ func TestFetchTSLWithOptions_ErrorHandling(t *testing.T) {
 
 func TestFetchTSLWithReferences_BackwardCompatibility(t *testing.T) {
 	defer gock.Off()
-	
+
 	defaultUserAgent := "Go-Trust/1.0 TSL Fetcher (+https://github.com/SUNET/go-trust)"
-	
+
 	// Setup mock for main TSL
 	gock.New("https://example.com").
 		Get("/main-tsl").
 		MatchHeader("User-Agent", defaultUserAgent). // Should use the default User-Agent
 		Reply(200).
 		File("./testdata/TSL-with-pointer.xml")
-	
+
 	// Setup mock for referenced TSL
 	gock.New("https://example.com").
 		Get("/referenced-tsl").
 		MatchHeader("User-Agent", defaultUserAgent). // Should use the default User-Agent
 		Reply(200).
 		File("./testdata/EWC-TL.xml")
-	
+
 	// Call the original FetchTSL function (not the one with options)
 	tsl, err := etsi119612.FetchTSL("https://example.com/main-tsl")
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, tsl)
 	assert.Equal(t, "https://example.com/main-tsl", tsl.Source)
-	
+
 	// Check that pointers were dereferenced (if any)
 	if len(tsl.Referenced) > 0 {
 		assert.NotNil(t, tsl.Referenced[0])
@@ -423,18 +423,221 @@ func TestFetchTSLWithReferencesAndOptions(t *testing.T) {
 		File("testdata/EWC-TL.xml")
 
 	options := etsi119612.TSLFetchOptions{
-		UserAgent: "Custom/2.0",
-		Timeout:   30 * time.Second,
+		UserAgent:           "Custom/2.0",
+		Timeout:             30 * time.Second,
+		MaxDereferenceDepth: 3,
 	}
-	
-	tsl, err := etsi119612.FetchTSLWithReferencesAndOptions("https://example.com/main.xml", options)
+
+	tsls, err := etsi119612.FetchTSLWithReferencesAndOptions("https://example.com/main.xml", options)
 	assert.NoError(t, err)
-	assert.NotNil(t, tsl)
-	assert.NotNil(t, tsl.Referenced)
-	assert.Greater(t, len(tsl.Referenced), 0)
-	
-	// Verify the referenced TSL was loaded with correct source
-	assert.Equal(t, "https://example.com/referenced.xml", tsl.Referenced[0].Source)
+	assert.NotEmpty(t, tsls)
+
+	// The first element should be the root TSL
+	rootTSL := tsls[0]
+	assert.NotNil(t, rootTSL)
+	assert.Equal(t, "https://example.com/main.xml", rootTSL.Source)
+
+	// Verify the referenced TSL is present in the array
+	assert.Equal(t, 2, len(tsls), "Should have root TSL and one referenced TSL")
+	assert.Equal(t, "https://example.com/referenced.xml", tsls[1].Source)
+
+	// Also verify it's referenced in the root TSL
+	assert.NotNil(t, rootTSL.Referenced)
+	assert.Greater(t, len(rootTSL.Referenced), 0)
+	assert.Equal(t, "https://example.com/referenced.xml", rootTSL.Referenced[0].Source)
+}
+
+func TestFetchTSLWithReferencesAndOptions_MaxDepth(t *testing.T) {
+	// Clean up all mocks before and after test
+	gock.OffAll()
+	defer gock.OffAll()
+
+	// Enable network access for these hosts to ensure mocks are used
+	gock.InterceptClient(http.DefaultClient)
+	defer gock.RestoreClient(http.DefaultClient)
+
+	// Mock the main TSL with a pointer to another TSL
+	gock.New("https://example.com").
+		Get("/main.xml").
+		Reply(200).
+		BodyString(`<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL>
+      <tsl:OtherTSLPointer>
+        <tsl:TSLLocation>https://example.com/referenced.xml</tsl:TSLLocation>
+      </tsl:OtherTSLPointer>
+    </tsl:PointersToOtherTSL>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>`)
+
+	// Mock both XML and PDF versions of the referenced TSL
+	gock.New("https://example.com").
+		Get("/referenced.xml").
+		Reply(200).
+		BodyString(`<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL>
+      <tsl:OtherTSLPointer>
+        <tsl:TSLLocation>https://example.com/self-reference.xml</tsl:TSLLocation>
+      </tsl:OtherTSLPointer>
+    </tsl:PointersToOtherTSL>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>`) // It has a pointer to a deeper reference
+
+	// Mock the PDF version to return a 404
+	gock.New("https://example.com").
+		Get("/referenced.pdf").
+		Reply(404).
+		BodyString("Not Found")
+
+	// Test with max depth 0 (no references followed)
+	options := etsi119612.TSLFetchOptions{
+		UserAgent:           "Custom/2.0",
+		Timeout:             30 * time.Second,
+		MaxDereferenceDepth: 0,
+		AcceptHeaders:       []string{"application/xml", "text/xml", "*/*"},
+	}
+
+	// Fetch the main TSL - should not follow references
+	var tsls []*etsi119612.TSL
+	var err error
+	tsls, err = etsi119612.FetchTSLWithReferencesAndOptions("https://example.com/main.xml", options)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(tsls), "Should have only the root TSL when max-depth is 0")
+	assert.Equal(t, "https://example.com/main.xml", tsls[0].Source)
+
+	// Reset mocks for the next test
+	gock.OffAll()
+
+	// Set up mocks again for the next test
+	gock.New("https://example.com").
+		Get("/main.xml").
+		Reply(200).
+		BodyString(`<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL>
+      <tsl:OtherTSLPointer>
+        <tsl:TSLLocation>https://example.com/referenced.xml</tsl:TSLLocation>
+      </tsl:OtherTSLPointer>
+    </tsl:PointersToOtherTSL>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>`)
+
+	gock.New("https://example.com").
+		Get("/referenced.xml").
+		Reply(200).
+		BodyString(`<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL>
+      <tsl:OtherTSLPointer>
+        <tsl:TSLLocation>https://example.com/self-reference.xml</tsl:TSLLocation>
+      </tsl:OtherTSLPointer>
+    </tsl:PointersToOtherTSL>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>`) // It has a pointer to a deeper reference
+
+	// Test with max depth 1 (direct references followed)
+	options.MaxDereferenceDepth = 1
+	tsls, err = etsi119612.FetchTSLWithReferencesAndOptions("https://example.com/main.xml", options)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(tsls), "Should have root TSL and one referenced TSL when max-depth is 1")
+
+	// Find the referenced TSL in the slice
+	var referencedTSL *etsi119612.TSL
+	for _, tsl := range tsls {
+		if tsl.Source == "https://example.com/referenced.xml" {
+			referencedTSL = tsl
+			break
+		}
+	}
+	assert.NotNil(t, referencedTSL, "Referenced TSL should be in the results")
+
+	// Check that gock intercepted all expected calls
+	assert.True(t, gock.IsDone(), "Not all expected HTTP calls were made")
+}
+
+func TestFetchTSLWithPDFPointer(t *testing.T) {
+	// Clean up all mocks before and after test
+	gock.OffAll()
+	defer gock.OffAll()
+
+	// Enable network access for these hosts to ensure mocks are used
+	gock.InterceptClient(http.DefaultClient)
+	defer gock.RestoreClient(http.DefaultClient)
+
+	// Mock the main TSL with a pointer to a PDF
+	gock.New("https://example.com").
+		Get("/main.xml").
+		Reply(200).
+		BodyString(`<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL>
+      <tsl:OtherTSLPointer>
+        <tsl:TSLLocation>https://example.com/referenced.pdf</tsl:TSLLocation>
+      </tsl:OtherTSLPointer>
+    </tsl:PointersToOtherTSL>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>`)
+
+	// Mock the XML version of the referenced TSL to return success
+	gock.New("https://example.com").
+		Get("/referenced.xml").
+		Reply(200).
+		BodyString(`<tsl:TrustServiceStatusList xmlns:tsl="http://uri.etsi.org/02231/v2#">
+  <tsl:SchemeInformation>
+    <tsl:PointersToOtherTSL/>
+  </tsl:SchemeInformation>
+  <tsl:TrustServiceProviderList/>
+</tsl:TrustServiceStatusList>`)
+
+	// Mock the PDF version to return a failure
+	gock.New("https://example.com").
+		Get("/referenced.pdf").
+		Reply(400).
+		BodyString("Invalid XML format - this is a PDF")
+
+	// Create fetch options with MaxDereferenceDepth set to allow following the reference
+	options := etsi119612.TSLFetchOptions{
+		UserAgent:           "TestAgent/1.0",
+		Timeout:             10 * time.Second,
+		MaxDereferenceDepth: 1,
+		AcceptHeaders:       []string{"application/xml", "text/xml", "*/*"},
+	}
+
+	// Fetch the main TSL with references - this should also try to dereference the pointer
+	var tsls []*etsi119612.TSL
+	var err error
+	tsls, err = etsi119612.FetchTSLWithReferencesAndOptions("https://example.com/main.xml", options)
+	assert.NoError(t, err)
+	assert.NotNil(t, tsls)
+
+	// Check that we have the root TSL and one referenced TSL (total of 2)
+	assert.Equal(t, 2, len(tsls))
+
+	// Verify the root TSL has the reference
+	root := tsls[0]
+	assert.Equal(t, "https://example.com/main.xml", root.Source)
+
+	// Check that we have the referenced TSL in the slice
+	var refTSL *etsi119612.TSL
+	for _, tsl := range tsls {
+		if tsl.Source == "https://example.com/referenced.xml" {
+			refTSL = tsl
+			break
+		}
+	}
+	assert.NotNil(t, refTSL, "Referenced TSL not found in the result")
+
+	// Check that gock intercepted all expected calls
+	assert.True(t, gock.IsDone(), "Not all expected HTTP calls were made")
+
+	// The referenced TSL should have the XML URL as its source
+	assert.Equal(t, "https://example.com/referenced.xml", refTSL.Source, "Source should be the XML URL, not the PDF URL")
 }
 
 func TestWithTrustServices_EmptyAndNil(t *testing.T) {

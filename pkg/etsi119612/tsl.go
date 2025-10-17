@@ -73,6 +73,7 @@ func (tsl *TSL) CleanCerts() {
 //   - The User-Agent header sent with HTTP requests
 //   - The timeout for HTTP connections and requests
 //   - Using a custom HTTP client for more advanced configuration
+//   - The maximum depth for dereferencing pointers to other TSLs
 //
 // For most cases, the DefaultTSLFetchOptions provide reasonable settings.
 type TSLFetchOptions struct {
@@ -91,12 +92,25 @@ type TSLFetchOptions struct {
 	// configured with the desired timeout and other settings.
 	// Use this for advanced scenarios like custom TLS configuration or proxies.
 	Client *http.Client
+
+	// MaxDereferenceDepth controls how many levels of TSL references are followed.
+	// A value of 0 means no references are followed.
+	// A value of -1 means follow references without a limit (be careful with this).
+	// Any positive value limits the depth of reference traversal.
+	MaxDereferenceDepth int
+
+	// AcceptHeaders defines the Accept header(s) to send with HTTP requests.
+	// This helps with content negotiation to ensure we receive XML content.
+	// If empty, a default set of XML-related Accept headers will be used.
+	AcceptHeaders []string
 }
 
 // DefaultTSLFetchOptions provides reasonable default options for fetching TSLs
 var DefaultTSLFetchOptions = TSLFetchOptions{
-	UserAgent: "Go-Trust/1.0 TSL Fetcher (+https://github.com/SUNET/go-trust)",
-	Timeout:   30 * time.Second,
+	UserAgent:           "Go-Trust/1.0 TSL Fetcher (+https://github.com/SUNET/go-trust)",
+	Timeout:             30 * time.Second,
+	MaxDereferenceDepth: 3,                                                                                                // Follow references up to 3 levels deep by default
+	AcceptHeaders:       []string{"application/xml", "text/xml", "application/xhtml+xml", "text/html;q=0.9", "*/*;q=0.8"}, // Prefer XML content
 }
 
 // FetchTSL creates a TSL object from a URL. The URL is fetched with [net/http], parsed and unmarshalled
@@ -104,7 +118,29 @@ var DefaultTSLFetchOptions = TSLFetchOptions{
 // pointers to other TSLs.
 //
 // For more control over HTTP parameters and dereferencing behavior, use FetchTSLWithOptions.
+//
+// Returns the root TSL only. For accessing referenced TSLs, use FetchTSLWithAllReferences.
 func FetchTSL(url string) (*TSL, error) {
+	tsls, err := FetchTSLWithReferencesAndOptions(url, DefaultTSLFetchOptions)
+	if err != nil {
+		return nil, err
+	}
+	if len(tsls) == 0 {
+		return nil, fmt.Errorf("no TSLs returned")
+	}
+	return tsls[0], nil
+}
+
+// FetchTSLWithAllReferences fetches a TSL and all its referenced TSLs using default options.
+// This returns all TSLs in a slice, with the root TSL being the first element.
+//
+// Parameters:
+//   - url: The URL to fetch the TSL from
+//
+// Returns:
+//   - A slice containing the root TSL and all referenced TSLs
+//   - Any error that occurred during fetching
+func FetchTSLWithAllReferences(url string) ([]*TSL, error) {
 	return FetchTSLWithReferencesAndOptions(url, DefaultTSLFetchOptions)
 }
 
@@ -139,31 +175,36 @@ func FetchTSLWithOptions(url string, options TSLFetchOptions) (*TSL, error) {
 				Timeout: options.Timeout,
 			}
 		}
-		
+
 		// Create request with context
 		ctx, cancel := context.WithTimeout(context.Background(), options.Timeout)
 		defer cancel()
-		
+
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Set User-Agent header
 		req.Header.Set("User-Agent", options.UserAgent)
-		
+
+		// Set Accept headers for content negotiation
+		if len(options.AcceptHeaders) > 0 {
+			req.Header.Set("Accept", strings.Join(options.AcceptHeaders, ", "))
+		}
+
 		// Execute request
 		resp, err := client.Do(req)
 		if err != nil {
 			return nil, err
 		}
 		defer resp.Body.Close()
-		
+
 		// Check response status
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("unexpected HTTP status: %s", resp.Status)
 		}
-		
+
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
@@ -196,9 +237,9 @@ func FetchTSLWithOptions(url string, options TSLFetchOptions) (*TSL, error) {
 	}
 
 	t.CleanCerts()
-	
+
 	// Don't automatically dereference pointers here - that will be done by the caller if needed
-	
+
 	log.Infof("g119612: Parsed TSL from %s with %d trust service providers\n", url, t.NumberOfTrustServiceProviders())
 
 	return &t, nil
@@ -213,23 +254,51 @@ func (tsl *TSL) AddReferencedTSL(ref *TSL) {
 
 // FetchTSLWithReferencesAndOptions fetches a TSL and all its referenced TSLs with the specified options.
 // This is a convenience function that combines FetchTSLWithOptions and dereferencePointersToOtherTSLWithOptions.
+// The depth of dereferencing is controlled by options.MaxDereferenceDepth.
 //
 // Parameters:
 //   - url: The URL to fetch the TSL from
-//   - options: Options controlling HTTP request parameters
+//   - options: Options controlling HTTP request parameters and dereferencing depth
 //
 // Returns:
-//   - A pointer to the fetched TSL with all referenced TSLs loaded
-//   - Any error that occurred during fetching or parsing
-func FetchTSLWithReferencesAndOptions(url string, options TSLFetchOptions) (*TSL, error) {
-	tsl, err := FetchTSLWithOptions(url, options)
+//   - A slice containing the fetched TSL and all its referenced TSLs (if any)
+//   - Any error that occurred during fetching or parsing the root TSL
+//
+// The first element in the returned slice is always the root TSL. Any referenced TSLs
+// that were successfully fetched follow in the slice. This allows callers to process
+// both the root TSL and all its references without having to traverse the reference tree.
+func FetchTSLWithReferencesAndOptions(url string, options TSLFetchOptions) ([]*TSL, error) {
+	root, err := FetchTSLWithOptions(url, options)
 	if err != nil {
 		return nil, err
 	}
-	
-	// Dereference pointers with the same options
-	tsl.dereferencePointersToOtherTSLWithOptions(options)
-	return tsl, nil
+
+	// If depth is 0, don't follow references at all
+	if options.MaxDereferenceDepth == 0 {
+		return []*TSL{root}, nil
+	}
+
+	// Collect all TSLs (root + referenced) using a map to avoid duplicates
+	allTSLs := make(map[string]*TSL)
+	allTSLs[url] = root
+
+	// Dereference pointers with the specified depth
+	if err := root.dereferencePointersTSLsRecursive(options, allTSLs, 1); err != nil {
+		// Log the error but continue - we still return what we have
+		log.Warnf("g119612: Error while dereferencing TSL pointers: %v", err)
+	}
+
+	// Convert map to slice, ensuring the root TSL is first
+	result := make([]*TSL, 0, len(allTSLs))
+	result = append(result, root)
+
+	for urlKey, tsl := range allTSLs {
+		if urlKey != url { // Skip the root which we already added
+			result = append(result, tsl)
+		}
+	}
+
+	return result, nil
 }
 
 // DereferencePointersToOtherTSL fetches and adds all referenced TSLs using default options.
@@ -261,6 +330,70 @@ func (tsl *TSL) dereferencePointersToOtherTSLWithOptions(options TSLFetchOptions
 	}
 }
 
+// dereferencePointersTSLsRecursive fetches referenced TSLs recursively up to the specified depth.
+// This is a helper method used by FetchTSLWithReferencesAndOptions to recursively follow references.
+//
+// Parameters:
+//   - options: Options controlling HTTP request parameters
+//   - allTSLs: Map to store all fetched TSLs by URL
+//   - currentDepth: Current depth of recursion
+//
+// Returns:
+//   - Any error that occurred during fetching
+func (tsl *TSL) dereferencePointersTSLsRecursive(options TSLFetchOptions, allTSLs map[string]*TSL, currentDepth int) error {
+	// Check if we've reached the maximum depth
+	if options.MaxDereferenceDepth > 0 && currentDepth > options.MaxDereferenceDepth {
+		return nil
+	}
+
+	// Skip if there are no pointers to other TSLs
+	if tsl.StatusList.TslSchemeInformation == nil || tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL == nil {
+		return nil
+	}
+
+	// Process each pointer
+	for _, p := range tsl.StatusList.TslSchemeInformation.TslPointersToOtherTSL.TslOtherTSLPointer {
+		// Skip if we've already fetched this TSL
+		if _, exists := allTSLs[p.TSLLocation]; exists {
+			continue
+		}
+
+		// Fetch the referenced TSL
+		url := p.TSLLocation
+		refTsl, err := FetchTSLWithOptions(url, options)
+
+		// If the URL ends with .pdf and fetch failed, try .xml instead
+		if err != nil && strings.HasSuffix(strings.ToLower(url), ".pdf") {
+			xmlURL := url[:len(url)-4] + ".xml" // Replace .pdf with .xml
+			log.Debugf("g119612: Failed to fetch TSL from PDF URL %s, trying XML URL %s", url, xmlURL)
+
+			refTsl, err = FetchTSLWithOptions(xmlURL, options)
+			if err == nil {
+				// Update the URL to the working one for future reference
+				url = xmlURL
+				log.Infof("g119612: Successfully fetched XML version instead of PDF: %s", xmlURL)
+			}
+		}
+
+		if err != nil {
+			log.Warnf("g119612: Failed to fetch referenced TSL %s: %v", p.TSLLocation, err)
+			continue
+		}
+
+		// Add to the referenced list and the map
+		tsl.AddReferencedTSL(refTsl)
+		allTSLs[url] = refTsl // Use potentially updated URL
+
+		// Recursively process this TSL's references
+		if err := refTsl.dereferencePointersTSLsRecursive(options, allTSLs, currentDepth+1); err != nil {
+			// Log but continue with other references
+			log.Warnf("g119612: Error dereferencing TSL %s: %v", p.TSLLocation, err)
+		}
+	}
+
+	return nil
+}
+
 // WithTrustServices walks a TSL, calling cb once for each TrustService found. The TrustServiceProvider is provided as a first
 // argument to the callback
 func (tsl *TSL) WithTrustServices(cb func(*TSPType, *TSPServiceType)) {
@@ -287,5 +420,44 @@ func (tsl *TSL) ToCertPool(policy *TSPServicePolicy) *x509.CertPool {
 			}
 		})
 	})
+	return pool
+}
+
+// ToCertPoolWithReferences generates a [crypto/xml.CertPool] object from the TSL and all its referenced TSLs.
+// This method processes this TSL and all TSLs found in the Referenced slice.
+//
+// Parameters:
+//   - policy: The policy to apply when validating certificates
+//
+// Returns:
+//   - *x509.CertPool: A certificate pool containing all valid certificates from this TSL
+//     and all its referenced TSLs that satisfy the given policy
+func (tsl *TSL) ToCertPoolWithReferences(policy *TSPServicePolicy) *x509.CertPool {
+	pool := x509.NewCertPool()
+
+	// Process the main TSL
+	tsl.WithTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
+		svc.WithCertificates(func(cert *x509.Certificate) {
+			// Only add cert if policy is satisfied
+			if tsp.Validate(svc, []*x509.Certificate{cert}, policy) == nil {
+				pool.AddCert(cert)
+			}
+		})
+	})
+
+	// Process all referenced TSLs
+	for _, refTsl := range tsl.Referenced {
+		if refTsl != nil {
+			refTsl.WithTrustServices(func(tsp *TSPType, svc *TSPServiceType) {
+				svc.WithCertificates(func(cert *x509.Certificate) {
+					// Only add cert if policy is satisfied
+					if tsp.Validate(svc, []*x509.Certificate{cert}, policy) == nil {
+						pool.AddCert(cert)
+					}
+				})
+			})
+		}
+	}
+
 	return pool
 }
